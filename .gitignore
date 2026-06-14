@@ -1,0 +1,74 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Triton
+.triton/
+triton_cache/
+*.triton
+
+# CUDA
+*.cubin
+*.fatbin
+*.ptx
+
+# Data and outputs
+*.json
+*.log
+*.csv
+*.pkl
+*.pt
+*.pth
+*.bin
+*.onnx
+*.safetensors
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# Model weights
+models/
+checkpoints/
+*.ckpt
