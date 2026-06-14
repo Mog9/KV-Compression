@@ -1,5 +1,5 @@
 """
-KV Cache Compression Visualization
+Visualization of KV Cache Compression Benchmark Results
 
 Creates publication-quality plots comparing Normal KV Cache vs KIVI across:
 - Memory usage over sequence length
@@ -61,7 +61,7 @@ def plot_memory_usage(results, save_path='memory_usage.png'):
     ax.plot(seq_lengths, normal_memory, 'o-', color=COLORS['normal'], 
             linewidth=2.5, markersize=8, label='Normal KV (FP16)', zorder=3)
     ax.plot(seq_lengths, kivi_memory, 's-', color=COLORS['kivi'], 
-            linewidth=2.5, markersize=8, label='KIVI (2-bit)', zorder=3)
+            linewidth=2.5, markersize=8, label='KIVI (Triton, 2-bit)', zorder=3)
     
     # Fill between to show difference
     ax.fill_between(seq_lengths, normal_memory, kivi_memory, 
@@ -80,7 +80,7 @@ def plot_memory_usage(results, save_path='memory_usage.png'):
     
     ax.set_xlabel('Sequence Length (tokens)', fontsize=12, fontweight='bold')
     ax.set_ylabel('KV Cache Memory (MB)', fontsize=12, fontweight='bold')
-    ax.set_title('KV Cache Memory Usage: Normal vs KIVI', fontsize=14, fontweight='bold', pad=15)
+    ax.set_title('KV Cache Memory Usage: Normal vs KIVI (Triton)', fontsize=14, fontweight='bold', pad=15)
     ax.legend(loc='upper left', framealpha=0.9, edgecolor='gray')
     ax.set_xlim(min(seq_lengths) - 50, max(seq_lengths) + 50)
     ax.set_ylim(0, max(normal_memory) * 1.1)
@@ -123,7 +123,7 @@ def plot_compression_ratio(results, save_path='compression_ratio.png'):
     
     ax.set_xlabel('Sequence Length (tokens)', fontsize=12, fontweight='bold')
     ax.set_ylabel('Compression Ratio', fontsize=12, fontweight='bold')
-    ax.set_title('KIVI Compression Ratio Over Sequence Length', 
+    ax.set_title('KIVI (Triton) Compression Ratio Over Sequence Length', 
                 fontsize=14, fontweight='bold', pad=15)
     ax.legend(loc='upper left', framealpha=0.9, edgecolor='gray')
     ax.set_xlim(min(seq_lengths) - 50, max(seq_lengths) + 50)
@@ -154,7 +154,7 @@ def plot_speed_comparison(results, save_path='speed_comparison.png'):
     # Create bars
     bars1 = ax.bar(x - width/2, normal_speeds, width, label='Normal KV (FP16)',
                    color=COLORS['normal'], alpha=0.85, edgecolor='white', linewidth=1.5)
-    bars2 = ax.bar(x + width/2, kivi_speeds, width, label='KIVI (2-bit)',
+    bars2 = ax.bar(x + width/2, kivi_speeds, width, label='KIVI (Triton, 2-bit)',
                    color=COLORS['kivi'], alpha=0.85, edgecolor='white', linewidth=1.5)
     
     # Add value labels on bars
@@ -177,7 +177,7 @@ def plot_speed_comparison(results, save_path='speed_comparison.png'):
     
     ax.set_xlabel('Test Prompt', fontsize=12, fontweight='bold')
     ax.set_ylabel('Generation Speed (tokens/sec)', fontsize=12, fontweight='bold')
-    ax.set_title('Generation Speed: Normal vs KIVI', fontsize=14, fontweight='bold', pad=15)
+    ax.set_title('Generation Speed: Normal vs KIVI (Triton)', fontsize=14, fontweight='bold', pad=15)
     ax.set_xticks(x)
     ax.set_xticklabels([p[:30] + '...' for p in prompts], rotation=15, ha='right')
     ax.legend(loc='upper right', framealpha=0.9, edgecolor='gray')
@@ -209,7 +209,7 @@ def plot_quality_comparison(results, save_path='quality_comparison.png'):
     # Left plot: Perplexity
     bars1 = ax1.bar(x - width/2, normal_ppl, width, label='Normal KV (FP16)',
                     color=COLORS['normal'], alpha=0.85, edgecolor='white', linewidth=1.5)
-    bars2 = ax1.bar(x + width/2, kivi_ppl, width, label='KIVI (2-bit)',
+    bars2 = ax1.bar(x + width/2, kivi_ppl, width, label='KIVI (Triton, 2-bit)',
                     color=COLORS['kivi'], alpha=0.85, edgecolor='white', linewidth=1.5)
     
     # Add value labels
@@ -274,7 +274,7 @@ def plot_comprehensive_summary(results, save_path='summary.png'):
     ax1.plot(seq_lengths, normal_memory, 'o-', color=COLORS['normal'], 
              linewidth=2.5, markersize=8, label='Normal (FP16)')
     ax1.plot(seq_lengths, kivi_memory, 's-', color=COLORS['kivi'], 
-             linewidth=2.5, markersize=8, label='KIVI (2-bit)')
+             linewidth=2.5, markersize=8, label='KIVI (Triton)')
     ax1.fill_between(seq_lengths, normal_memory, kivi_memory, alpha=0.15, color=COLORS['kivi'])
     ax1.set_xlabel('Sequence Length', fontsize=11)
     ax1.set_ylabel('Memory (MB)', fontsize=11)
@@ -335,7 +335,7 @@ def plot_comprehensive_summary(results, save_path='summary.png'):
     ax4.grid(True, alpha=0.3, axis='y')
     
     # Add main title
-    fig.suptitle('KV Cache Compression: Normal vs KIVI Benchmark Summary', 
+    fig.suptitle('KV Cache Compression: Normal vs KIVI (Triton) Benchmark Summary', 
                 fontsize=16, fontweight='bold', y=0.98)
     
     plt.savefig(save_path, dpi=300, bbox_inches='tight')
@@ -346,13 +346,13 @@ def plot_comprehensive_summary(results, save_path='summary.png'):
 def main():
     """Generate all plots."""
     print("="*80)
-    print("GENERATING KV CACHE COMPRESSION VISUALIZATIONS")
+    print("GENERATING KV CACHE COMPRESSION VISUALIZATIONS (Triton)")
     print("="*80)
     
     # Find the latest benchmark results file
-    results_files = list(Path('benchmarks').glob('benchmark_results_*.json'))
+    results_files = list(Path('.').glob('benchmark_results_*.json'))
     if not results_files:
-        print("ERROR: No benchmark results found. Run benchmarks/benchmark.py first.")
+        print("ERROR: No benchmark results found. Run benchmark.py first.")
         return
     
     latest_results = max(results_files, key=lambda p: p.stat().st_mtime)
@@ -363,27 +363,23 @@ def main():
     print("\nGenerating plots...")
     print("-" * 80)
     
-    # Output directory for images
-    img_dir = 'images/kivi-benchmarks'
-    Path(img_dir).mkdir(parents=True, exist_ok=True)
-    
     # Generate individual plots
-    plot_memory_usage(results, f'{img_dir}/memory_usage.png')
-    plot_compression_ratio(results, f'{img_dir}/compression_ratio.png')
-    plot_speed_comparison(results, f'{img_dir}/speed_comparison.png')
-    plot_quality_comparison(results, f'{img_dir}/quality_comparison.png')
+    plot_memory_usage(results, 'memory_usage.png')
+    plot_compression_ratio(results, 'compression_ratio.png')
+    plot_speed_comparison(results, 'speed_comparison.png')
+    plot_quality_comparison(results, 'quality_comparison.png')
     
     # Generate comprehensive summary
-    plot_comprehensive_summary(results, f'{img_dir}/summary.png')
+    plot_comprehensive_summary(results, 'summary.png')
     
     print("-" * 80)
     print("\nAll plots generated successfully!")
     print("\nGenerated files:")
-    print("  1. images/kivi-benchmarks/memory_usage.png       - Memory usage over sequence length")
-    print("  2. images/kivi-benchmarks/compression_ratio.png  - Compression ratio progression")
-    print("  3. images/kivi-benchmarks/speed_comparison.png   - Generation speed comparison")
-    print("  4. images/kivi-benchmarks/quality_comparison.png - Quality (perplexity) comparison")
-    print("  5. images/kivi-benchmarks/summary.png            - Comprehensive 4-panel summary")
+    print("  1. memory_usage.png       - Memory usage over sequence length")
+    print("  2. compression_ratio.png  - Compression ratio progression")
+    print("  3. speed_comparison.png   - Generation speed comparison")
+    print("  4. quality_comparison.png - Quality (perplexity) comparison")
+    print("  5. summary.png            - Comprehensive 4-panel summary")
     print("\n" + "="*80)
 
 
