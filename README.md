@@ -53,23 +53,23 @@ Based on the paper: ["KIVI: A Tuning-Free Asymmetric 2bit Quantization for KV Ca
 
 | Sequence Length | Normal (FP16) | KIVI (2-bit) | Compression |
 |----------------|---------------|--------------|-------------|
-| 128 tokens     | 0.38 MB       | 0.06 MB      | 6.74x       |
-| 512 tokens     | 1.50 MB       | 0.21 MB      | 7.01x       |
-| 1024 tokens    | 3.00 MB       | 0.42 MB      | 7.06x       |
-| 2048 tokens    | 6.00 MB       | 0.85 MB      | **7.09x**   |
+| 128 tokens     | 4.50 MB       | 1.79 MB      | 2.51x       |
+| 512 tokens     | 18.00 MB      | 3.69 MB      | 4.88x       |
+| 1024 tokens    | 36.00 MB      | 6.22 MB      | 5.79x       |
+| 2048 tokens    | 72.00 MB      | 11.29 MB     | **6.38x**   |
 
-**Key Observation:** KIVI achieves consistent ~7x compression at longer sequences. At very short sequences (128 tokens), the residual buffer overhead slightly reduces compression.
+**Key Observation:** KIVI achieves up to 6.38x compression at 2048 tokens. Compression improves with longer sequences as the fixed overhead of scales, zero points, and residual buffer becomes amortized.
 
 ### Generation Performance
 
 | Method | Speed (tok/s) | Memory (GB) | Compression |
 |--------|---------------|-------------|-------------|
-| Normal | 197.95        | 0.24        | 1.0x        |
-| KIVI   | 227.64        | 0.14        | ~7x*        |
+| Normal | 175.47        | 0.25        | 1.0x        |
+| KIVI   | 201.79        | 0.12        | ~2.2x*      |
 
-*Compression at typical generation lengths
+*Compression at typical generation lengths (short sequences)
 
-**Speedup:** 1.15x faster with KIVI (estimated)
+**Speedup:** 1.15x faster with KIVI
 
 ### Quality Analysis
 
@@ -82,7 +82,7 @@ Based on the paper: ["KIVI: A Tuning-Free Asymmetric 2bit Quantization for KV Ca
 
 ## Analysis
 
-### Why KIVI Achieves ~7x Compression
+### Why KIVI Achieves Up to 6.38x Compression
 
 The KIVI implementation uses:
 - **2-bit quantization:** 0.25 bytes per element (vs 2 bytes for FP16) = 8x theoretical compression
@@ -90,10 +90,10 @@ The KIVI implementation uses:
 - **Residual buffer:** Last 32 tokens in FP16 for local attention
 
 At 2048 tokens:
-- Quantized cache: 0.85 MB (2-bit)
-- Scales/zero-points: ~0.10 MB
-- Residual buffer: ~0.05 MB
-- **Total: ~1.00 MB** (7x better than FP16's 6.00 MB)
+- Quantized cache: 9.00 MB (2-bit)
+- Scales/zero-points: 1.16 MB
+- Residual buffer: 1.13 MB
+- **Total: 11.29 MB** (6.38x better than FP16's 72.00 MB)
 
 ### Why KIVI is Faster
 
