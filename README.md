@@ -115,15 +115,15 @@ This is why KIVI achieves only 1.5% perplexity degradation at 2-bit, while naive
 
 ## Benchmark Visualizations
 
-![Memory Usage](benchmarks/images/kivi-benchmarks/memory_usage.png)
+![Memory Usage](images/kivi-benchmarks/memory_usage.png)
 
-![Compression Ratio](benchmarks/images/kivi-benchmarks/compression_ratio.png)
+![Compression Ratio](images/kivi-benchmarks/compression_ratio.png)
 
-![Speed Comparison](benchmarks/images/kivi-benchmarks/speed_comparison.png)
+![Speed Comparison](images/kivi-benchmarks/speed_comparison.png)
 
-![Quality Comparison](benchmarks/images/kivi-benchmarks/quality_comparison.png)
+![Quality Comparison](images/kivi-benchmarks/quality_comparison.png)
 
-![Summary](benchmarks/images/kivi-benchmarks/summary.png)
+![Summary](images/kivi-benchmarks/summary.png)
 
 ## Project Structure
 
@@ -164,7 +164,7 @@ This will:
 python benchmarks/plot_results.py
 ```
 
-Generates plots in `benchmarks/images/kivi-benchmarks/`:
+Generates plots in `images/kivi-benchmarks/`:
 - Memory usage over sequence length
 - Compression ratio progression
 - Speed comparison
