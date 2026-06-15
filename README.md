@@ -115,15 +115,15 @@ This is why KIVI achieves only 1.5% perplexity degradation at 2-bit, while naive
 
 ## Benchmark Visualizations
 
-![Memory Usage](images/kivi-benchmarks/memory_usage.png)
+![Memory Usage](benchmarks/images/kivi-benchmarks/memory_usage.png)
 
-![Compression Ratio](images/kivi-benchmarks/compression_ratio.png)
+![Compression Ratio](benchmarks/images/kivi-benchmarks/compression_ratio.png)
 
-![Speed Comparison](images/kivi-benchmarks/speed_comparison.png)
+![Speed Comparison](benchmarks/images/kivi-benchmarks/speed_comparison.png)
 
-![Quality Comparison](images/kivi-benchmarks/quality_comparison.png)
+![Quality Comparison](benchmarks/images/kivi-benchmarks/quality_comparison.png)
 
-![Summary](images/kivi-benchmarks/summary.png)
+![Summary](benchmarks/images/kivi-benchmarks/summary.png)
 
 ## Project Structure
 
