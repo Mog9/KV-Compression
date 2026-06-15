@@ -129,12 +129,17 @@ This is why KIVI achieves only 1.5% perplexity degradation at 2-bit, while naive
 
 ```
 KV-Compression/
-├── normal_kv.py              # FP16 baseline implementation
-├── kivi_triton.py            # KIVI 2-bit asymmetric quantization (Triton)
-├── benchmark.py              # Comprehensive benchmark suite
-├── plot_results.py           # Benchmark visualization
+├── src/
+│   ├── normal_kv.py              # FP16 baseline implementation
+│   ├── kivi_triton.py            # KIVI 2-bit asymmetric quantization (Triton)
+│   └── kivi_paged_triton.py      # KIVI with PagedAttention (experimental)
+├── benchmarks/
+│   ├── benchmark.py              # Comprehensive benchmark suite
+│   ├── plot_results.py           # Benchmark visualization
+│   └── images/
+│       └── kivi-benchmarks/      # Benchmark plots
 └── images/
-    └── kivi-benchmarks/      # Benchmark plots
+    └── kivi-benchmarks/          # Additional benchmark visualizations
 ```
 
 ## Usage
@@ -142,7 +147,7 @@ KV-Compression/
 ### Run Benchmarks
 
 ```bash
-python benchmark.py
+python benchmarks/benchmark.py
 ```
 
 This will:
@@ -156,10 +161,10 @@ This will:
 ### Generate Visualizations
 
 ```bash
-python plot_results.py
+python benchmarks/plot_results.py
 ```
 
-Generates plots in `images/kivi-benchmarks/`:
+Generates plots in `benchmarks/images/kivi-benchmarks/`:
 - Memory usage over sequence length
 - Compression ratio progression
 - Speed comparison
@@ -170,10 +175,10 @@ Generates plots in `images/kivi-benchmarks/`:
 
 ```bash
 # Test normal KV cache
-python normal_kv.py
+python src/normal_kv.py
 
 # Test KIVI implementation
-python kivi_triton.py
+python src/kivi_triton.py
 ```
 
 ## Implementation Notes
@@ -196,7 +201,7 @@ Currently tested with:
 - GPT-2 Medium (355M)
 - GPT-2 Large (774M)
 
-To use a different model, change `model_name` in `benchmark.py`:
+To use a different model, change `model_name` in `benchmarks/benchmark.py`:
 ```python
 benchmark = KVCacheBenchmark(model_name='gpt2-medium')
 ```
@@ -218,7 +223,7 @@ benchmark = KVCacheBenchmark(model_name='gpt2-medium')
 
 ## Future Work
 
-- Add more compression methods (TurboQuant, eviction-based, hybrid)
+- Add more compression methods (TurboQuant, hybrid approaches)
 - Test on larger models (Llama-3, Mistral, etc.)
 - Benchmark on real workloads (LongBench, Needle-in-Haystack, etc.)
 - Compare different bit-widths and quantization strategies

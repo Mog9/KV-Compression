@@ -72,3 +72,7 @@ htmlcov/
 models/
 checkpoints/
 *.ckpt
+
+# Benchmarks and images
+benchmarks/
+images/
