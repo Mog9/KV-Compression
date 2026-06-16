@@ -66,11 +66,11 @@ Both methods include Flash Attention for improved speed:
 
 | Method | Best Speedup | At Sequence Length | Quality (MAE) |
 |--------|--------------|-------------------|---------------|
-| KIVI + Flash | 1.86x | 2048 tokens | 0.000023 |
-| TurboQuant + Flash | 1.98x | 2048 tokens | 0.000006 |
+| KIVI + Flash | 1.08x | 512 tokens | 0.000023 |
+| TurboQuant + Flash | 1.32x | 512 tokens | 0.000006 |
 
 **TurboQuant + Flash Attention** provides the best combination:
-- 1.98x speedup
+- 1.32x speedup
 - 7.11x compression
 - Excellent quality preservation (MAE 0.000006)
 
@@ -81,7 +81,7 @@ Both methods include Flash Attention for improved speed:
 **Key metrics at 4096 tokens:**
 - Compression: 6.73x
 - Memory: 1.69 MB (vs 12.00 MB FP16)
-- Flash Attention speedup: 1.14x
+- Flash Attention speedup: 1.00x
 - Quality preservation: MAE 0.000017
 
 ## Project Structure
@@ -140,7 +140,7 @@ python benchmarks/plot_kivi_vs_turboquant.py
 - Tiled attention computation
 - Online softmax for memory efficiency
 - Avoids materializing full attention matrix
-- Up to **1.98x speedup**
+- Up to **1.32x speedup**
 
 ### Memory Management
 - Pre-allocated tensors
