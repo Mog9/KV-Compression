@@ -75,3 +75,5 @@ checkpoints/
 
 # Benchmarks and images
 benchmarks/
+images/turbo-benchmarks/
+!images/turbo-benchmarks/compression_comparison.png

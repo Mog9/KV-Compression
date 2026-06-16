@@ -1,145 +1,106 @@
-# KV Cache Compression (Triton)
+# KV Cache Compression with Triton
 
-Research implementation of KV cache compression methods for LLM inference using Triton kernels, benchmarking memory savings, throughput, and quality tradeoffs.
+High-performance KV cache compression for LLM inference using Triton kernels. Implements KIVI and TurboQuant with Flash Attention integration, achieving up to **7.11x compression** with minimal quality loss.
 
 ## Overview
 
-KV cache compression addresses a critical bottleneck in LLM inference: as sequence lengths grow, the key-value cache can consume more GPU memory than the model weights themselves. This repository implements and benchmarks compression methods to reduce KV cache footprint while maintaining generation quality.
-
-### Why KV Cache Compression Matters
-
-During autoregressive generation, every new token adds keys and values to the cache. At 128K+ context lengths, the KV cache becomes the dominant memory consumer:
-- Memory bandwidth bound: GPU must read massive amounts of KV data per token
-- Limits batch size and context length
-- KV cache is the single largest cost driver for long-context inference
+KV cache compression addresses a critical bottleneck in LLM inference: as sequence lengths grow, the key-value cache can consume more GPU memory than the model weights themselves. This repository implements state-of-the-art compression methods using Triton for maximum performance.
 
 ## Methods
 
-### 1. Normal KV Cache (FP16 Baseline)
+### 1. KIVI (2-bit Asymmetric Quantization)
 
-Standard uncompressed KV cache storing keys and values in full FP16 precision.
+Based on: ["KIVI: A Tuning-Free Asymmetric 2bit Quantization for KV Cache"](https://arxiv.org/abs/2402.02750) (ICML 2024)
 
-**Implementation:** `normal_kv.py`
+**Key Insight:** Keys and values behave differently:
+- **Keys:** Persistent channel outliers → quantize per-channel
+- **Values:** Dynamic per-token variations → quantize per-token
 
-### 2. KIVI (2-bit Asymmetric Quantization - Triton)
+**Implementation:** `kivi/kivi_triton.py`
 
-Based on the paper: ["KIVI: A Tuning-Free Asymmetric 2bit Quantization for KV Cache"](https://arxiv.org/abs/2402.02750) (Liu et al., ICML 2024)
+**Features:**
+- 2-bit asymmetric quantization
+- Flash Attention integration (`kivi/flash_attention_kivi.py`)
+- Residual buffer for recent tokens (32 tokens in FP16)
+- Up to **7.10x compression** at 4096 tokens
 
-**Key Insight:** Keys and values behave fundamentally differently:
-- **Keys:** Have persistent channel outliers that stay important across many tokens → quantize per-channel
-- **Values:** Are dynamic and vary token by token → quantize per-token
+### 2. TurboQuant (2-bit Scalar Quantization with Rotation)
 
-**Implementation:** `kivi_triton.py` (Triton kernels)
+Based on: ["TurboQuant: Online Vector Quantization with Near-optimal Distortion Rate"](https://arxiv.org/abs/2504.19874) (Google Research, ICLR 2026)
 
-**Algorithm:**
-1. Keys: Compute min/max per channel across sequence dimension, quantize to 2-bit with per-channel scales
-2. Values: Compute min/max per token across head dimension, quantize to 2-bit with per-token scales
-3. Maintain residual buffer (last 32 tokens) in FP16 for local attention
-4. Dequantize on-the-fly during attention computation
+**Key Insight:** Random rotation makes KV cache distribution more uniform, enabling better compression.
 
-**Why Triton?**
-- Fused operations reduce memory traffic
-- Better GPU utilization
-- No Python overhead in hot paths
-- 1.56x faster quantization kernels vs PyTorch
+**Implementation:** `turboquant/turboquant_triton.py`
 
-## Benchmark Results (Triton Implementation)
+**Features:**
+- 2-bit scalar quantization with random rotation
+- Flash Attention integration (`turboquant/flash_attention_turboquant.py`)
+- Single scale factor per vector (reduced overhead)
+- Up to **7.53x compression** at 4096 tokens
+
+**Why TurboQuant wins:**
+- ✅ **6% better compression** than KIVI (7.53x vs 7.10x)
+- ✅ **4x better quality preservation** (lower MAE)
+- ✅ **6% less memory** usage
+
+## Benchmark Results
 
 **Model:** GPT-2 (124M parameters)  
 **Config:** 12 layers × 12 heads × 64 dim  
-**Device:** CUDA
+**Device:** CUDA GPU
 
-### Memory Usage
+### Compression Comparison
 
-| Sequence Length | Normal (FP16) | KIVI (2-bit) | Compression |
-|----------------|---------------|--------------|-------------|
-| 128 tokens     | 4.50 MB       | 1.79 MB      | 2.51x       |
-| 512 tokens     | 18.00 MB      | 3.69 MB      | 4.88x       |
-| 1024 tokens    | 36.00 MB      | 6.22 MB      | 5.79x       |
-| 2048 tokens    | 72.00 MB      | 11.29 MB     | **6.38x**   |
+| Sequence Length | KIVI (2-bit) | TurboQuant (2-bit) | Winner |
+|----------------|--------------|-------------------|--------|
+| 512 tokens     | 7.01x        | 7.53x             | TurboQuant |
+| 1024 tokens    | 7.06x        | 7.53x             | TurboQuant |
+| 2048 tokens    | 7.09x        | 7.53x             | TurboQuant |
+| 4096 tokens    | 7.10x        | **7.53x**         | **TurboQuant** |
 
-**Key Observation:** KIVI achieves up to 6.38x compression at 2048 tokens. Compression improves with longer sequences as the fixed overhead of scales, zero points, and residual buffer becomes amortized.
+![Compression Comparison](images/turbo-benchmarks/compression_comparison.png)
 
-### Generation Performance
+### Flash Attention Integration
 
-| Method | Speed (tok/s) | Memory (GB) | Compression |
-|--------|---------------|-------------|-------------|
-| Normal | 175.47        | 0.25        | 1.0x        |
-| KIVI   | 201.79        | 0.12        | ~2.2x*      |
+Both methods include Flash Attention for improved speed:
 
-*Compression at typical generation lengths (short sequences)
+| Method | Best Speedup | At Sequence Length | Quality (MAE) |
+|--------|--------------|-------------------|---------------|
+| KIVI + Flash | 1.86x | 2048 tokens | 0.000023 |
+| TurboQuant + Flash | 1.98x | 2048 tokens | 0.000006 |
 
-**Speedup:** 1.15x faster with KIVI
+**TurboQuant + Flash Attention** provides the best combination:
+- 1.98x speedup
+- 7.53x compression
+- Excellent quality preservation (MAE 0.000006)
 
-### Quality Analysis
+### KIVI Comprehensive Results
 
-| Method | Perplexity | Degradation |
-|--------|------------|-------------|
-| Normal | 1.92       | baseline    |
-| KIVI   | 1.95       | +1.50%      |
+![KIVI Summary](images/kivi-benchmarks/summary.png)
 
-**Quality Impact:** Minimal - only 1.5% perplexity increase, aligning with the KIVI paper's findings.
-
-## Analysis
-
-### Why KIVI Achieves Up to 6.38x Compression
-
-The KIVI implementation uses:
-- **2-bit quantization:** 0.25 bytes per element (vs 2 bytes for FP16) = 8x theoretical compression
-- **Scales and zero points:** Small overhead for quantization parameters
-- **Residual buffer:** Last 32 tokens in FP16 for local attention
-
-At 2048 tokens:
-- Quantized cache: 9.00 MB (2-bit)
-- Scales/zero-points: 1.16 MB
-- Residual buffer: 1.13 MB
-- **Total: 11.29 MB** (6.38x better than FP16's 72.00 MB)
-
-### Why KIVI is Faster
-
-The speedup comes from:
-
-1. **Reduced memory bandwidth:** 2-bit data requires 8x less HBM reads during attention
-2. **Better cache utilization:** Smaller KV cache fits better in GPU caches
-3. **Larger batch sizes:** Freed memory allows processing more requests in parallel
-4. **Triton kernels:** Fused operations, reduced memory traffic, no Python overhead
-
-### Quality Preservation
-
-KIVI's asymmetric quantization strategy is key to quality preservation:
-
-- **Keys (per-channel):** Preserves persistent outlier channels that are critical for attention
-- **Values (per-token):** Adapts to dynamic per-token variations
-
-This is why KIVI achieves only 1.5% perplexity degradation at 2-bit, while naive quantization would cause much larger quality loss.
-
-## Benchmark Visualizations
-
-![Memory Usage](images/kivi-benchmarks/memory_usage.png)
-
-![Compression Ratio](images/kivi-benchmarks/compression_ratio.png)
-
-![Speed Comparison](images/kivi-benchmarks/speed_comparison.png)
-
-![Quality Comparison](images/kivi-benchmarks/quality_comparison.png)
-
-![Summary](images/kivi-benchmarks/summary.png)
+**Key metrics at 4096 tokens:**
+- Compression: 7.10x
+- Memory: 1.69 MB (vs 12.00 MB FP16)
+- Flash Attention speedup: 1.14x
+- Quality preservation: MAE 0.000017
 
 ## Project Structure
 
 ```
 KV-Compression/
-├── src/
-│   ├── normal_kv.py              # FP16 baseline implementation
-│   ├── kivi_triton.py            # KIVI 2-bit asymmetric quantization (Triton)
-│   └── kivi_paged_triton.py      # KIVI with PagedAttention (experimental)
+├── kivi/
+│   ├── kivi_triton.py              # KIVI implementation
+│   └── flash_attention_kivi.py     # Flash Attention for KIVI
+├── turboquant/
+│   ├── turboquant_triton.py        # TurboQuant implementation
+│   └── flash_attention_turboquant.py # Flash Attention for TurboQuant
 ├── benchmarks/
-│   ├── benchmark.py              # Comprehensive benchmark suite
-│   ├── plot_results.py           # Benchmark visualization
-│   └── images/
-│       └── kivi-benchmarks/      # Benchmark plots
+│   ├── benchmark.py                # Main benchmark suite
+│   ├── plot_kivi_vs_turboquant.py  # Comparison plots
+│   └── ...
 └── images/
-    └── kivi-benchmarks/          # Additional benchmark visualizations
+    ├── kivi-benchmarks/            # KIVI benchmark plots
+    └── turbo-benchmarks/           # TurboQuant comparison plots
 ```
 
 ## Usage
@@ -147,90 +108,61 @@ KV-Compression/
 ### Run Benchmarks
 
 ```bash
+# KIVI benchmark
 python benchmarks/benchmark.py
+
+# KIVI vs TurboQuant comparison
+python benchmarks/plot_kivi_vs_turboquant.py
+
+# Flash Attention benchmark
+python benchmarks/benchmark_flash_attention.py
 ```
 
-This will:
-1. Load GPT-2 model
-2. Test memory usage at different sequence lengths
-3. Benchmark generation speed
-4. Measure quality (perplexity)
-5. Compare Normal vs KIVI
-6. Save results to JSON
-
-### Generate Visualizations
+### Generate Plots
 
 ```bash
+# KIVI plots
 python benchmarks/plot_results.py
+
+# KIVI vs TurboQuant comparison plots
+python benchmarks/plot_kivi_vs_turboquant.py
 ```
 
-Generates plots in `images/kivi-benchmarks/`:
-- Memory usage over sequence length
-- Compression ratio progression
-- Speed comparison
-- Quality comparison
-- Comprehensive summary
+## Performance Optimizations
 
-### Test Individual Components
-
-```bash
-# Test normal KV cache
-python src/normal_kv.py
-
-# Test KIVI implementation
-python src/kivi_triton.py
-```
-
-## Implementation Notes
-
-This is a **Triton implementation** optimized for performance. The benchmarks show real performance gains from:
-- Fused quantization/dequantization kernels
+### Triton Kernels
+- Fused quantization/dequantization operations
 - Reduced memory traffic
 - Better GPU utilization
+- **44.6% better compression** than PyTorch implementation
 
-**Key optimizations:**
-- Pre-allocated tensors to avoid repeated allocation
-- Incremental quantization (only quantize new tokens)
+### Flash Attention
+- Tiled attention computation
+- Online softmax for memory efficiency
+- Avoids materializing full attention matrix
+- Up to **1.98x speedup**
+
+### Memory Management
+- Pre-allocated tensors
+- Incremental quantization
 - Residual buffer for recent tokens
-- Group-based quantization for efficient kernel launches
+- Minimal overhead from scales/zero-points
 
-## Model Support
+## Quality Preservation
 
-Currently tested with:
-- GPT-2 (124M)
-- GPT-2 Medium (355M)
-- GPT-2 Large (774M)
+Both methods maintain excellent quality:
 
-To use a different model, change `model_name` in `benchmarks/benchmark.py`:
-```python
-benchmark = KVCacheBenchmark(model_name='gpt2-medium')
-```
-
-## Practical Implications
-
-### When to Use KIVI
-
-**Good for:**
-- Long-context inference (1024+ tokens)
-- Memory-constrained deployments
-- High-throughput serving (larger batch sizes)
-- Production systems where quality is critical
-
-**Not ideal for:**
-- Very short sequences (<128 tokens) - residual buffer overhead dominates
-- Latency-critical single-token generation
-- When you need maximum compression (consider 4-bit or 8-bit instead)
-
-## Future Work
-
-- Add more compression methods (TurboQuant, hybrid approaches)
-- Test on larger models (Llama-3, Mistral, etc.)
-- Benchmark on real workloads (LongBench, Needle-in-Haystack, etc.)
-- Compare different bit-widths and quantization strategies
-- Implement fused attention with quantized cache
+| Method | Quality (MAE) | Notes |
+|--------|---------------|-------|
+| KIVI | 0.000017 | Good quality preservation |
+| TurboQuant | 0.000004 | **4x better** than KIVI |
+| KIVI + Flash | 0.000017 | Flash maintains quality |
+| TurboQuant + Flash | 0.000006 | Best overall quality |
 
 ## References
 
 - KIVI Paper: https://arxiv.org/abs/2402.02750
+- TurboQuant Paper: https://arxiv.org/abs/2504.19874
+- Flash Attention Paper: https://arxiv.org/abs/2205.14135
 - Triton Documentation: https://triton-lang.org/
 - Blog Post: https://mog9.github.io/blogs/KV/index.html
