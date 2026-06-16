@@ -22,7 +22,7 @@ Based on: ["KIVI: A Tuning-Free Asymmetric 2bit Quantization for KV Cache"](http
 - 2-bit asymmetric quantization
 - Flash Attention integration (`kivi/flash_attention_kivi.py`)
 - Residual buffer for recent tokens (32 tokens in FP16)
-- Up to **7.10x compression** at 4096 tokens
+- Up to **6.73x compression** at 4096 tokens
 
 ### 2. TurboQuant (2-bit Scalar Quantization with Rotation)
 
@@ -36,12 +36,12 @@ Based on: ["TurboQuant: Online Vector Quantization with Near-optimal Distortion 
 - 2-bit scalar quantization with random rotation
 - Flash Attention integration (`turboquant/flash_attention_turboquant.py`)
 - Single scale factor per vector (reduced overhead)
-- Up to **7.53x compression** at 4096 tokens
+- Up to **7.11x compression** at 4096 tokens
 
 **Why TurboQuant wins:**
-- ✅ **6% better compression** than KIVI (7.53x vs 7.10x)
+- ✅ **5.6% better compression** than KIVI (7.11x vs 6.73x)
 - ✅ **4x better quality preservation** (lower MAE)
-- ✅ **6% less memory** usage
+- ✅ **5% less memory** usage
 
 ## Benchmark Results
 
@@ -53,10 +53,10 @@ Based on: ["TurboQuant: Online Vector Quantization with Near-optimal Distortion 
 
 | Sequence Length | KIVI (2-bit) | TurboQuant (2-bit) | Winner |
 |----------------|--------------|-------------------|--------|
-| 512 tokens     | 7.01x        | 7.53x             | TurboQuant |
-| 1024 tokens    | 7.06x        | 7.53x             | TurboQuant |
-| 2048 tokens    | 7.09x        | 7.53x             | TurboQuant |
-| 4096 tokens    | 7.10x        | **7.53x**         | **TurboQuant** |
+| 512 tokens     | 4.88x        | 5.12x             | TurboQuant |
+| 1024 tokens    | 5.79x        | 6.10x             | TurboQuant |
+| 2048 tokens    | 6.38x        | 6.74x             | TurboQuant |
+| 4096 tokens    | 6.73x        | **7.11x**         | **TurboQuant** |
 
 ![Compression Comparison](images/turbo-benchmarks/compression_comparison.png)
 
@@ -71,7 +71,7 @@ Both methods include Flash Attention for improved speed:
 
 **TurboQuant + Flash Attention** provides the best combination:
 - 1.98x speedup
-- 7.53x compression
+- 7.11x compression
 - Excellent quality preservation (MAE 0.000006)
 
 ### KIVI Comprehensive Results
@@ -79,7 +79,7 @@ Both methods include Flash Attention for improved speed:
 ![KIVI Summary](images/kivi-benchmarks/summary.png)
 
 **Key metrics at 4096 tokens:**
-- Compression: 7.10x
+- Compression: 6.73x
 - Memory: 1.69 MB (vs 12.00 MB FP16)
 - Flash Attention speedup: 1.14x
 - Quality preservation: MAE 0.000017
