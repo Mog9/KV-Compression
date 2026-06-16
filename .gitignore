@@ -75,7 +75,3 @@ checkpoints/
 
 # Benchmarks and images
 benchmarks/
-images/turbo-benchmarks/comprehensive_summary.png
-images/turbo-benchmarks/memory_comparison.png
-images/turbo-benchmarks/quality_comparison.png
-images/turbo-benchmarks/speedup_comparison.png
