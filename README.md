@@ -47,32 +47,75 @@ Based on: ["TurboQuant: Online Vector Quantization with Near-optimal Distortion 
 
 **Model:** GPT-2 (124M parameters)  
 **Config:** 12 layers × 12 heads × 64 dim  
-**Device:** CUDA GPU
+**Device:** CUDA GPU  
+**Trials:** 5 trials with 3 warmup runs each
+
+### Comprehensive Summary
+
+![Comprehensive Benchmark Summary](images/turbo-benchmarks/comprehensive_summary.png)
 
 ### Compression Comparison
 
-| Sequence Length | KIVI (2-bit) | TurboQuant (2-bit) | Winner |
-|----------------|--------------|-------------------|--------|
-| 512 tokens     | 4.88x        | 5.12x             | TurboQuant |
-| 1024 tokens    | 5.79x        | 6.10x             | TurboQuant |
-| 2048 tokens    | 6.38x        | 6.74x             | TurboQuant |
-| 4096 tokens    | 6.73x        | **7.11x**         | **TurboQuant** |
+| Sequence Length | KIVI (2-bit) | TurboQuant (2-bit) | Improvement |
+|----------------|--------------|-------------------|-------------|
+| 512 tokens     | 4.88x        | 5.12x             | +4.9%       |
+| 1024 tokens    | 5.79x        | 6.10x             | +5.4%       |
+| 2048 tokens    | 6.38x        | 6.74x             | +5.6%       |
+| 4096 tokens    | 6.73x        | **7.11x**         | **+5.6%**   |
 
 ![Compression Comparison](images/turbo-benchmarks/compression_comparison.png)
 
-### Flash Attention Integration
+**TurboQuant consistently outperforms KIVI by 5-6% across all sequence lengths.**
 
-Both methods include Flash Attention for improved speed:
+### Memory Usage
 
-| Method | Best Speedup | At Sequence Length | Quality (MAE) |
-|--------|--------------|-------------------|---------------|
-| KIVI + Flash | 1.08x | 512 tokens | 0.000023 |
-| TurboQuant + Flash | 1.32x | 512 tokens | 0.000006 |
+| Sequence Length | KIVI (2-bit) | TurboQuant (2-bit) | Memory Saved |
+|----------------|--------------|-------------------|--------------|
+| 512 tokens     | 0.31 MB      | 0.29 MB           | -6.5%        |
+| 1024 tokens    | 0.52 MB      | 0.49 MB           | -5.8%        |
+| 2048 tokens    | 0.94 MB      | 0.89 MB           | -5.3%        |
+| 4096 tokens    | 1.78 MB      | 1.69 MB           | -5.1%        |
 
-**TurboQuant + Flash Attention** provides the best combination:
-- 1.32x speedup
-- 7.11x compression
-- Excellent quality preservation (MAE 0.000006)
+![Memory Comparison](images/turbo-benchmarks/memory_comparison.png)
+
+**TurboQuant uses 5-6% less memory than KIVI at all sequence lengths.**
+
+### Flash Attention Speedup
+
+| Sequence Length | KIVI + Flash | TurboQuant + Flash |
+|----------------|--------------|-------------------|
+| 512 tokens     | 1.08x        | **1.32x**         |
+| 1024 tokens    | 1.02x        | 1.00x             |
+| 2048 tokens    | 1.00x        | 1.00x             |
+| 4096 tokens    | 1.00x        | 1.02x             |
+
+![Speedup Comparison](images/turbo-benchmarks/speedup_comparison.png)
+
+**Flash Attention provides up to 1.32x speedup (TurboQuant at 512 tokens).**
+
+### Quality Preservation (MAE)
+
+| Sequence Length | KIVI + Flash | TurboQuant + Flash | Improvement |
+|----------------|--------------|-------------------|-------------|
+| 512 tokens     | 3.7e-05      | 8.6e-06           | 4.3x better |
+| 1024 tokens    | 3.4e-05      | 8.3e-06           | 4.1x better |
+| 2048 tokens    | 2.1e-05      | 4.8e-06           | 4.4x better |
+| 4096 tokens    | 1.9e-05      | 4.5e-06           | **4.2x better** |
+
+![Quality Comparison](images/turbo-benchmarks/quality_comparison.png)
+
+**TurboQuant maintains 4x better quality preservation across all sequence lengths.**
+
+### Key Findings
+
+**TurboQuant advantages:**
+- ✅ 5.6% better compression (7.11x vs 6.73x at 4096 tokens)
+- ✅ 5% less memory usage
+- ✅ 4.2x better quality preservation
+- ✅ Better Flash Attention speedup (1.32x vs 1.08x)
+
+**Why TurboQuant wins:**
+TurboQuant uses a simplified rotation approach with uniform scalar quantization, achieving better compression than KIVI's asymmetric per-channel/per-token strategy. The rotation creates a more uniform distribution that enables more efficient quantization.
 
 ### KIVI Comprehensive Results
 
@@ -80,9 +123,9 @@ Both methods include Flash Attention for improved speed:
 
 **Key metrics at 4096 tokens:**
 - Compression: 6.73x
-- Memory: 1.69 MB (vs 12.00 MB FP16)
+- Memory: 1.78 MB (vs 12.00 MB FP16)
 - Flash Attention speedup: 1.00x
-- Quality preservation: MAE 0.000017
+- Quality preservation: MAE 0.000019
 
 ## Project Structure
 
