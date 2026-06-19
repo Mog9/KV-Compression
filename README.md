@@ -45,16 +45,45 @@ Based on: ["TurboQuant: Online Vector Quantization with Near-optimal Distortion 
 
 ## Benchmark Results
 
+### Qwen3.5 9B (8.95B Parameters)
+
+**Model:** Qwen3.5 9B  
+**Config:** 32 layers (8 full attention + 24 linear attention) × 4 KV heads × 256 dim  
+**Device:** AMD MI300X (192GB HBM3)
+
+#### Compression Performance
+
+| Sequence Length | FP16 Memory | TurboQuant (2-bit) | Compression | Memory Saved |
+|----------------|-------------|-------------------|-------------|--------------|
+| 512 tokens     | 16.00 MB    | 3.06 MB           | 5.22x       | 80.9%        |
+| 1024 tokens    | 32.00 MB    | 5.12 MB           | 6.24x       | 84.0%        |
+| 2048 tokens    | 64.00 MB    | 9.25 MB           | 6.92x       | 85.5%        |
+| 4096 tokens    | 128.00 MB   | 17.50 MB          | **7.31x**   | **86.3%**    |
+
+![Compression Comparison](images/qwen-benchmarks/compression.png)
+
+**TurboQuant achieves up to 7.31x compression on Qwen3.5 9B with only 2% quality loss.**
+
+#### Quality Preservation
+
+![Quality Comparison](images/qwen-benchmarks/quality.png)
+
+**Generation quality remains excellent with minimal perplexity increase across all test prompts.**
+
+---
+
+### GPT-2 (124M Parameters)
+
 **Model:** GPT-2 (124M parameters)  
 **Config:** 12 layers × 12 heads × 64 dim  
 **Device:** CUDA GPU  
 **Trials:** 5 trials with 3 warmup runs each
 
-### Comprehensive Summary
+#### Comprehensive Summary
 
 ![Comprehensive Benchmark Summary](images/turbo-benchmarks/comprehensive_summary.png)
 
-### Compression Comparison
+#### Compression Comparison
 
 | Sequence Length | KIVI (2-bit) | TurboQuant (2-bit) | Improvement |
 |----------------|--------------|-------------------|-------------|
@@ -67,7 +96,7 @@ Based on: ["TurboQuant: Online Vector Quantization with Near-optimal Distortion 
 
 **TurboQuant consistently outperforms KIVI by 5-6% across all sequence lengths.**
 
-### Memory Usage
+#### Memory Usage
 
 | Sequence Length | KIVI (2-bit) | TurboQuant (2-bit) | Memory Saved |
 |----------------|--------------|-------------------|--------------|
@@ -80,7 +109,7 @@ Based on: ["TurboQuant: Online Vector Quantization with Near-optimal Distortion 
 
 **TurboQuant uses 5-6% less memory than KIVI at all sequence lengths.**
 
-### Flash Attention Speedup
+#### Flash Attention Speedup
 
 | Sequence Length | KIVI + Flash | TurboQuant + Flash |
 |----------------|--------------|-------------------|
@@ -93,7 +122,7 @@ Based on: ["TurboQuant: Online Vector Quantization with Near-optimal Distortion 
 
 **Flash Attention provides up to 1.32x speedup (TurboQuant at 512 tokens).**
 
-### Quality Preservation (MAE)
+#### Quality Preservation (MAE)
 
 | Sequence Length | KIVI + Flash | TurboQuant + Flash | Improvement |
 |----------------|--------------|-------------------|-------------|
@@ -106,7 +135,7 @@ Based on: ["TurboQuant: Online Vector Quantization with Near-optimal Distortion 
 
 **TurboQuant maintains 4x better quality preservation across all sequence lengths.**
 
-### Key Findings
+#### Key Findings
 
 **TurboQuant advantages:**
 - ✅ 5.6% better compression (7.11x vs 6.73x at 4096 tokens)
@@ -117,7 +146,7 @@ Based on: ["TurboQuant: Online Vector Quantization with Near-optimal Distortion 
 **Why TurboQuant wins:**
 TurboQuant uses a simplified rotation approach with uniform scalar quantization, achieving better compression than KIVI's asymmetric per-channel/per-token strategy. The rotation creates a more uniform distribution that enables more efficient quantization.
 
-### KIVI Comprehensive Results
+#### KIVI Comprehensive Results
 
 ![KIVI Summary](images/kivi-benchmarks/summary.png)
 
